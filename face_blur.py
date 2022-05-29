@@ -14,9 +14,9 @@ class BlurFace:
     def __init__(self, coordinates, folder_name):
         self.coordinates: [int] = coordinates
         self.folder_name: str = folder_name
-        self.anonymize_face_pixelate()
+        self.pixelate_face()
 
-    def anonymize_face_pixelate(self, blocks=10):
+    def pixelate_face(self, blocks=5):
         # find the coordinates sent on the image
         for image, coordinate in zip(os.listdir(self.folder_name), self.coordinates):
             img = cv2.imread(os.path.join(self.folder_name,image))
@@ -25,28 +25,34 @@ class BlurFace:
             endY = coordinate[0][1]
             startX = coordinate[0][0]
             endX = coordinate[1][0]
-            #Get the height and width of the region of interest (roi)
-            (h, w) = endY-startY, endX-startX
-            # Linearly spaced integers starting from the bottom left coordinate of the image to the top right coordinate
-            xSteps = np.linspace(startX, w, blocks+1, dtype='int')
-            ySteps = np.linspace(startY, h, blocks + 1, dtype='int')
-            # loop over blocks in y and x
-            for i in range(1, len(ySteps)):
-                for j in range(1, len(xSteps)):
-                    startX = xSteps[j -1]
-                    startY = ySteps[i -1]
-                    endX = xSteps[j]
-                    endY = ySteps[i]
-                    roi = img[startY:endY, startX:endX]
-                    # Changes the rgb value to an average of the local region of interest
-                    (R, G, B) = [int(x) for x in cv2.mean(roi)[:3]]
-                    cv2.rectangle(img, (startX, startY), (endX, endY),
-                                  (R, G, B), -1)
-            # Writes the image back to the folder with blur_ prepended
-            cv2.imwrite(os.path.join(self.folder_name, f"blur_{image}"), img)
+            if startX >= endX or startY >= endY:
+                print(f"Invalid coordinates: {[startX, endY], [endX, startY]}")
+                continue
+            else:
+                #Get the height and width of the region of interest (roi)
+                (h, w) = endY-startY, endX-startX
+                # Linearly spaced integers starting from the bottom left coordinate of the image to the top right coordinate
+                xSteps = np.linspace(startX, w, blocks+1, dtype='int')
+                ySteps = np.linspace(startY, h, blocks + 1, dtype='int')
+                # loop over blocks in y and x
+                for i in range(1, len(ySteps)):
+                    for j in range(1, len(xSteps)):
+                        startX = xSteps[j -1]
+                        startY = ySteps[i -1]
+                        endX = xSteps[j]
+                        endY = ySteps[i]
+                        roi = img[startY:endY, startX:endX]
+                        # Changes the rgb value to an average of the local region of interest
+                        (R, G, B) = [int(x) for x in cv2.mean(roi)[:3]]
+                        cv2.rectangle(img, (startX, startY), (endX, endY),
+                                      (R, G, B), -1)
+                # Writes the image back to the folder with blur_ prepended
+                cv2.imwrite(os.path.join(self.folder_name, f"blur_{image}"), img)
+                # path = os.path.join(self.folder_name, f"blur_{image}")
+                # image = cv2.imread(path)
+                # cv2.imshow("image", image)
+                # cv2.waitKey(0)
 
-
-blur = BlurFace(coordinates=[[[125, 400], [125, 400]], [[100, 350], [100, 350]]], folder_name='./images')
-print(blur)
+blur = BlurFace(coordinates=[[[20, 300], [100, 20]], [[50, 200], [200, 50]]], folder_name='./images')
 
 
